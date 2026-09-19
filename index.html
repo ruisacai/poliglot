@@ -140,10 +140,15 @@
       </button>
     </div>
 
-    <!-- Translate button -->
-    <button id="translateBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 active:scale-[0.98] transition text-white font-bold py-3.5 rounded-2xl shadow-md flex items-center justify-center gap-2 text-base">
-      🌐 Traducir / Hablar
-    </button>
+    <!-- Translate + Clear buttons -->
+    <div class="flex items-center gap-2">
+      <button id="translateBtn" class="flex-1 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 active:scale-[0.98] transition text-white font-bold py-3.5 rounded-2xl shadow-md flex items-center justify-center gap-2 text-base">
+        🌐 Traducir / Hablar
+      </button>
+      <button id="clearBtn" title="Limpiar" class="flex-1 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] transition text-slate-600 font-bold py-3.5 rounded-2xl shadow-md flex items-center justify-center gap-2 text-base border border-slate-200">
+        🗑️ Limpiar
+      </button>
+    </div>
 
     <!-- Translated text -->
     <div class="relative">
@@ -441,6 +446,12 @@ inputText.addEventListener('keydown', (e) => {
     e.preventDefault();
     doTranslate();
   }
+});
+
+const clearBtn = document.getElementById('clearBtn');
+clearBtn.addEventListener('click', () => {
+  resetConversation();
+  inputText.focus();
 });
 
 /* ========================================================================
