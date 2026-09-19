@@ -372,7 +372,21 @@ swapBtn.addEventListener('click', () => {
    Traduce cualquier frase libre con gramática real. Si no hay conexión,
    se avisa claramente al usuario (no hay traducción "inventada").
    ======================================================================== */
-async function callTranslateAPI(text, from, to) {
+// Motor principal: endpoint público de Google Translate (sin clave, sin coste).
+// Es más fiable que MyMemory para no mezclar idiomas por error.
+async function callGoogleTranslate(text, from, to) {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("google-network-error");
+  const data = await res.json();
+  if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error("google-bad-response");
+  const translated = data[0].map((segment) => segment[0] || "").join("");
+  if (!translated.trim()) throw new Error("google-empty");
+  return translated;
+}
+
+// Motor de respaldo: MyMemory, por si Google no responde (red, bloqueo, etc.).
+async function callMyMemory(text, from, to) {
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("network-error");
@@ -382,6 +396,15 @@ async function callTranslateAPI(text, from, to) {
   // MyMemory a veces devuelve un mensaje de aviso en vez de traducción real
   if (/MYMEMORY WARNING/i.test(translated)) throw new Error("quota-warning");
   return translated;
+}
+
+async function callTranslateAPI(text, from, to) {
+  try {
+    return await callGoogleTranslate(text, from, to);
+  } catch (googleError) {
+    // Si Google falla por cualquier motivo, probamos con MyMemory como plan B.
+    return await callMyMemory(text, from, to);
+  }
 }
 
 let translateInFlight = false;
