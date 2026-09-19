@@ -4,7 +4,7 @@
 // un acceso directo). Cachea el "cascarón" de la app para que cargue
 // más rápido, pero la traducción sigue necesitando conexión a internet.
 
-const CACHE_NAME = "poliglot-cache-v2";
+const CACHE_NAME = "poliglot-cache-v3";
 const APP_SHELL = [
   "./",
   "./index.html",

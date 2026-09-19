@@ -24,17 +24,24 @@
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
-  /* Avatar "hablando": aparece, pulsa y muestra ondas de sonido mientras suena la voz */
+  /* Avatar a pantalla completa: aparece, pulsa y muestra ondas de sonido mientras suena la voz */
+  #avatarWrap {
+    z-index: 60;
+    background: radial-gradient(circle at 50% 35%, #0369a1 0%, #0c4a6e 70%, #082f49 100%);
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.96);
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+  }
   #avatarWrap.is-visible {
-    max-height: 10rem;
     opacity: 1;
+    visibility: visible;
     transform: scale(1);
-    padding-top: 0.25rem;
-    padding-bottom: 0.75rem;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0s;
   }
 
   .avatar-ring {
-    border: 3px solid rgba(2, 132, 199, 0.55);
+    border: 3px solid rgba(255, 255, 255, 0.55);
     opacity: 0;
   }
   #avatarWrap.is-speaking .avatar-ring {
@@ -52,10 +59,10 @@
   #avatarWrap.is-speaking #soundWave { opacity: 1; }
 
   .wave-bar {
-    width: 4px;
-    height: 6px;
+    width: 5px;
+    height: 8px;
     border-radius: 2px;
-    background: #0284c7;
+    background: #ffffff;
     display: inline-block;
   }
   #avatarWrap.is-speaking .wave-bar {
@@ -67,8 +74,8 @@
   #avatarWrap.is-speaking .wave-bar:nth-child(4) { animation-delay: 0.36s; }
   #avatarWrap.is-speaking .wave-bar:nth-child(5) { animation-delay: 0.48s; }
   @keyframes wave-bounce {
-    0%, 100% { height: 6px; }
-    50%      { height: 20px; }
+    0%, 100% { height: 8px; }
+    50%      { height: 28px; }
   }
 </style>
 </head>
@@ -85,20 +92,22 @@
     <p class="text-sky-100 text-xs mt-1">Español · Română · English</p>
   </div>
 
-  <!-- Avatar que "habla" mientras se reproduce la voz -->
-  <div id="avatarWrap" class="flex flex-col items-center justify-center gap-2 py-0 max-h-0 opacity-0 scale-75 overflow-hidden transition-all duration-300 ease-out">
-    <div class="relative w-24 h-24 mt-3">
+  <!-- Avatar a pantalla completa mientras se reproduce la voz -->
+  <div id="avatarWrap" class="fixed inset-0 flex flex-col items-center justify-center gap-6 px-6">
+    <div class="relative w-56 h-56 sm:w-64 sm:h-64">
       <span class="avatar-ring absolute inset-0 rounded-full"></span>
       <span class="avatar-ring avatar-ring-delay absolute inset-0 rounded-full"></span>
-      <img id="avatarImg" alt="Poliglot" class="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-xl">
+      <img id="avatarImg" alt="Poliglot" class="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full object-cover border-4 border-white shadow-2xl">
     </div>
-    <div id="soundWave" class="flex items-end gap-1 h-5">
+    <div id="soundWave" class="flex items-end gap-1.5 h-8">
       <span class="wave-bar"></span>
       <span class="wave-bar"></span>
       <span class="wave-bar"></span>
       <span class="wave-bar"></span>
       <span class="wave-bar"></span>
     </div>
+    <p id="avatarCaption" class="text-white text-center text-lg font-medium max-w-sm drop-shadow"></p>
+    <p class="text-white/70 text-xs absolute bottom-6">Toca la pantalla para cerrar</p>
   </div>
 
   <div class="p-4 space-y-4">
@@ -439,24 +448,30 @@ inputText.addEventListener('keydown', (e) => {
    ======================================================================== */
 const avatarWrap = document.getElementById('avatarWrap');
 const avatarImg = document.getElementById('avatarImg');
+const avatarCaption = document.getElementById('avatarCaption');
 const headerLogo = document.getElementById('headerLogo');
 // Reutiliza la misma imagen incrustada del logo, sin duplicar el archivo.
 if (avatarImg && headerLogo) avatarImg.src = headerLogo.src;
 
-function showAvatarSpeaking() {
+function showAvatarSpeaking(text) {
   if (!avatarWrap) return;
+  if (avatarCaption) avatarCaption.textContent = text || "";
   avatarWrap.classList.add('is-visible', 'is-speaking');
 }
 
 function hideAvatarSpeaking() {
   if (!avatarWrap) return;
   avatarWrap.classList.remove('is-speaking');
-  // Se oculta del todo un instante después, para que la animación no corte en seco.
-  setTimeout(() => {
-    if (!avatarWrap.classList.contains('is-speaking')) {
-      avatarWrap.classList.remove('is-visible');
-    }
-  }, 250);
+  avatarWrap.classList.remove('is-visible');
+  if (avatarCaption) avatarCaption.textContent = "";
+}
+
+// Tocar la pantalla completa del avatar corta la voz y la cierra al instante.
+if (avatarWrap) {
+  avatarWrap.addEventListener('click', () => {
+    window.speechSynthesis.cancel();
+    hideAvatarSpeaking();
+  });
 }
 
 function speak(text, langCode) {
@@ -477,7 +492,7 @@ function speak(text, langCode) {
   if (match) utterance.voice = match;
 
   // El avatar aparece y "habla" (pulso + ondas) mientras dura la locución.
-  utterance.onstart = showAvatarSpeaking;
+  utterance.onstart = () => showAvatarSpeaking(text);
   utterance.onend = hideAvatarSpeaking;
   utterance.onerror = hideAvatarSpeaking;
 
