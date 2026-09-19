@@ -4,7 +4,7 @@
 // un acceso directo). Cachea el "cascarón" de la app para que cargue
 // más rápido, pero la traducción sigue necesitando conexión a internet.
 
-const CACHE_NAME = "poliglot-cache-v3";
+const CACHE_NAME = "poliglot-cache-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -15,7 +15,22 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Importante: forzamos "reload" para saltarnos la caché HTTP normal
+      // del navegador y descargar SIEMPRE una copia fresca de la red al
+      // actualizar. Sin esto, una versión antigua ya cacheada por el propio
+      // teléfono podía quedar "atrapada" dentro del nuevo caché.
+      await Promise.all(
+        APP_SHELL.map(async (url) => {
+          try {
+            const response = await fetch(url, { cache: "reload" });
+            await cache.put(url, response);
+          } catch (e) {
+            // Si falla una descarga puntual, no bloqueamos la instalación entera.
+          }
+        })
+      );
+    })
   );
   self.skipWaiting();
 });
